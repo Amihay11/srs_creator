@@ -54,4 +54,19 @@ print("Mapping summary:", info.summary())
 
 `signal` contains one OFDM symbol of complex baseband SRS samples. The accompanying `MappingInfo` describes the hopping state, cyclic shift, comb offset, and occupied bandwidth.
 
+## Getting Started
+The project depends on NumPy and Matplotlib. From the repository root:
 
+```bash
+python -m pip install --upgrade pip
+python -m pip install numpy matplotlib
+```
+
+## Example Usage
+Run the included tester to generate several SRS instances, compute their cross-correlation matrix, and save a heatmap:
+
+```bash
+python srs_tester.py
+```
+
+The script prints the configurations used, the correlation matrix, and the location of the saved plot (`correlation_matrix.png`).
