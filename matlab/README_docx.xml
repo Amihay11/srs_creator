@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr><w:b/></w:rPr>
+        <w:t>LTE SRS MATLAB Workflow (Word XML)</w:t>
+      </w:r>
+    </w:p>
+
+    <w:p><w:r><w:t>This WordprocessingML file can be opened directly in Word or saved as a .docx without introducing binary assets. It mirrors the MATLAB README so it can be included in PRs where binary files are blocked.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>1. Overview</w:t></w:r></w:p>
+    <w:p><w:r><w:t>The MATLAB port reproduces the LTE Sounding Reference Signal creator, tester, and report generator. All helper functions live in the +lte_srs package, while srs_tester.m and srs_report.m provide quick validation and PDF reporting.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>2. Key Parameters</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- cell_id: Physical cell ID used in Gold sequence generation.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- bandwidth_config (C_srs): SRS bandwidth index selecting resource allocations.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- subframe_config (T_srs): Periodicity pattern controlling active subframes.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- b_hop: Hopping bandwidth configuration.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- group_hopping_enabled / sequence_hopping_enabled: PRS and root index hopping options.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- transmission_comb (k_tc): Even/odd comb selection for subcarrier mapping.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- cyclic_shift (n_cs): Applies a cyclic phase shift to decorrelate UEs.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- srs_bandwidth (B_srs) and n_ul_rb: Choose occupied bandwidth and uplink grid size.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>3. Processing Steps</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Setup:</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- cfg = lte_srs.create_config(...) builds a validated structure for each UE.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- lte_srs.is_active_subframe(cfg, n_sf) tests whether subframe n_sf carries SRS.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Signal path:</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Root and cyclic shift: lte_srs.generate_zadoff_chu plus lte_srs.apply_cyclic_shift.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Hopping: lte_srs.group_and_sequence_hopping selects the active root u(n) and q(n).</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Mapping: lte_srs.map_to_frequency_grid applies comb spacing and RB allocation.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- OFDM symbol: lte_srs.generate_srs returns the complex baseband vector and metadata.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>4. Validation and Reporting</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- srs_tester.m builds multiple UE configs, synthesizes their SRS, and plots the normalized cross-correlation matrix.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- srs_report.m (MATLAB Report Generator) assembles a PDF with configuration tables, per-UE constellation/time plots, hopping spectrograms, and the correlation heatmap.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>5. Quick Commands</w:t></w:r></w:p>
+    <w:p><w:r><w:t>addpath('matlab');</w:t></w:r></w:p>
+    <w:p><w:r><w:t>srs_tester;          % run validation and save correlation_matrix.png</w:t></w:r></w:p>
+    <w:p><w:r><w:t>srs_report;          % produce matlab/srs_report.pdf</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>6. Text Diagrams</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Signal chain:</w:t></w:r></w:p>
+    <w:p><w:r><w:t>[Config] -&gt; [Root/Hopping] -&gt; [Cyclic Shift] -&gt; [Comb Mapping] -&gt; [OFDM Symbol]</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Hopping phases:</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Subframe n: u(n), q(n) ---- Subframe n+1: u(n+1), q(n+1) ----&gt; Spectrogram highlights tone jumps.</w:t></w:r></w:p>
+
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>7. Exporting</w:t></w:r></w:p>
+    <w:p><w:r><w:t>In Word, use File &gt; Save As and choose .docx to create a binary document if needed. Keeping this XML in version control avoids PR failures caused by binary attachments.</w:t></w:r></w:p>
+
+    <w:p/>
+  </w:body>
+</w:document>
