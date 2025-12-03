@@ -2,6 +2,9 @@
 
 This folder mirrors the Python toolkit in pure MATLAB so the LTE SRS
 examples, tester, and supporting utilities can be run without Python.
+It now serves as the single source of documentation for the MATLAB flow;
+the previous WordprocessingML handout has been removed and its contents
+are folded into this README for easier maintenance.
 
 ## Structure
 
@@ -16,10 +19,74 @@ examples, tester, and supporting utilities can be run without Python.
   Generator with per-UE sequence plots, hopping spectrograms, and a
   cross-correlation heatmap.
 
+## SRS overview
+
+The LTE Sounding Reference Signal (SRS) lets the eNodeB probe uplink
+channel quality. A single SRS symbol is transmitted in the last SC-FDMA
+symbol of certain uplink subframes, occupying a comb of subcarriers across
+one or more resource blocks (RBs). Key references: 3GPP TS 36.211
+Sections 5.5.1–5.5.4.
+
+### Core parameters
+
+- **cell_id (N<sub>ID</sub><sup>cell</sup>)** – Physical cell ID used in the
+  Gold sequence (pseudo-random sequence, PRS) that seeds hopping and cyclic
+  shift selection.
+- **bandwidth_config (C<sub>srs</sub>)** – Bandwidth index that selects which
+  contiguous RB span is available to SRS for a given subframe.
+- **subframe_config (T<sub>srs</sub>)** – Periodicity pattern determining
+  which uplink subframes carry SRS.
+- **b_hop** – Hopping bandwidth configuration controlling how the PRS drives
+  root hopping among Zadoff–Chu bases.
+- **group_hopping_enabled / sequence_hopping_enabled** – Enable group hopping
+  (changes the root index group) or sequence hopping (offsets the sequence
+  number q(n) when the SRS bandwidth is small).
+- **transmission_comb (k<sub>tc</sub>)** – Chooses even or odd subcarriers in
+  the comb mapping.
+- **cyclic_shift (n<sub>cs</sub>)** – Applies a cyclic phase shift to decorrelate
+  SRS from multiple UEs using the same root.
+- **srs_bandwidth (B<sub>srs</sub>)** – Active SRS bandwidth index that, with
+  `bandwidth_config`, defines the occupied RB range.
+- **n_ul_rb** – Uplink system bandwidth in RBs; used to bound the allocation.
+
+### End-to-end signal flow
+
+1) **Configuration and validation** – `lte_srs.create_config` builds a struct
+   from user parameters, checks ranges, computes derived values (active RB
+   span, comb spacing, cyclic shift indices), and supplies defaults.
+2) **Subframe gating** – `lte_srs.is_active_subframe(cfg, n_sf)` determines if
+   subframe `n_sf` should carry SRS for the chosen T<sub>srs</sub>.
+3) **PRS generation** – `lte_srs.generate_prs` advances the Gold sequence to
+   obtain the `n_prs` value for the subframe. This seeds group hopping and the
+   cyclic shift.
+4) **Group/sequence hopping** – `lte_srs.group_and_sequence_hopping` computes
+   the Zadoff–Chu root index u(n) and sequence number q(n) per subframe from
+   n<sub>prs</sub>, b<sub>hop</sub>, and hopping flags.
+5) **Base sequence** – `lte_srs.generate_zadoff_chu` produces the length-M ZC
+   sequence r<sub>u,v</sub>(m) with prime root. `lte_srs.apply_cyclic_shift`
+   rotates the sequence by the configured n<sub>cs</sub> to decorrelate UEs.
+6) **Comb mapping and bandwidth placement** –
+   `lte_srs.map_to_frequency_grid` interleaves tones according to
+   k<sub>tc</sub> (even/odd) and centers them in the selected RB span derived
+   from B<sub>srs</sub> and C<sub>srs</sub>.
+7) **Time-domain symbol** – `lte_srs.generate_srs` assembles the full SRS
+   sequence for the subframe, applies any required cyclic shift, and returns
+   the complex baseband vector plus mapping metadata (tone indices, root info,
+   hopping state) for debugging.
+
+Text diagrams:
+
+```
+[Config] -> [PRS n_prs] -> [Group/Sequence Hopping] -> [ZC Root] ->
+[Cyclic Shift] -> [Comb Mapping] -> [OFDM Symbol]
+
+Subframe n:   u(n), q(n), n_cs(n)
+Subframe n+1: u(n+1), q(n+1), n_cs(n+1)  --> Spectrogram highlights tone jumps
+```
+
 ## Quick start
 
-From MATLAB or Octave, add the `matlab/` folder to your path and run the
-tester:
+From MATLAB, add the `matlab/` folder to your path and run the tester:
 
 ```matlab
 addpath('matlab');
@@ -46,23 +113,20 @@ cfg = lte_srs.create_config( ...
 ```
 
 The output `signal` is a complex baseband OFDM symbol and `info` contains
-metadata mirroring the Python `MappingInfo` structure.
+metadata (tone indices, hopping state, and root selection) mirroring the
+Python `MappingInfo` structure.
 
-## Word-compatible XML handout
+## Validation and reporting
 
-The repository includes `README_docx.xml`, a WordprocessingML version of
-this guide that can be opened directly in Microsoft Word or LibreOffice.
-It avoids binary `.docx` assets so pull requests stay text-only while still
-allowing you to "Save As" a `.docx` if you need a traditional Word file.
-
-## Creating the PDF report
-
-Use MATLAB with the Report Generator toolbox to build the PDF tester
-report. It summarizes the UE configurations, validates each SRS sequence,
-plots cross-correlation, and adds spectrograms for hopping-enabled UEs.
+- **Tester** – `srs_tester.m` builds multiple UE configs, synthesizes their
+  SRS, and plots the normalized cross-correlation matrix (saved as
+  `correlation_matrix.png`).
+- **PDF report** – `srs_report.m` (MATLAB Report Generator) assembles a PDF
+  with configuration tables, per-UE constellation/time plots, hopping
+  spectrograms, and the correlation heatmap.
 
 ```matlab
 addpath('matlab');
-srs_report;                 % writes matlab/srs_report.pdf by default
-srs_report('out.pdf');       % custom destination
+srs_report;           % writes matlab/srs_report.pdf by default
+srs_report('out.pdf');% custom destination
 ```
