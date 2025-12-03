@@ -19,15 +19,27 @@ def generate_prs(c_init: int, length: int) -> np.ndarray:
         Number of sequence elements to produce.
     """
 
+    # Allocate registers with room for the 31 seed chips plus the requested
+    # "length" chips that follow them. This forward-only recurrence prevents
+    # the negative indexing that arises when translating the standard's
+    # x(n-3)/x(n-31) notation directly into Python.
     x1 = np.zeros(length + 31, dtype=int)
     x2 = np.zeros(length + 31, dtype=int)
+
+    # x1 seed: x1(0)=1, x1(1..30)=0 per TS 36.211 §7.2
     x1[0] = 1
-    for n in range(1, length + 31):
-        x1[n] = (x1[n - 3] + x1[n - 31]) % 2
+
+    # x2 seed from c_init bits (LSB first)
     for n in range(31):
         x2[n] = (c_init >> n) & 1
-    for n in range(31, length + 31):
-        x2[n] = (x2[n - 3] + x2[n - 2] + x2[n - 1] + x2[n - 31]) % 2
+
+    # Generate additional chips moving forward to stay within bounds
+    for n in range(length):
+        x1[n + 31] = (x1[n + 3] + x1[n]) % 2
+        x2[n + 31] = (x2[n + 3] + x2[n + 2] + x2[n + 1] + x2[n]) % 2
+
+    # Combine LFSRs; start at index 31 so Python index 31 aligns with n=0
+    # in the specification. Truncate to the requested length.
     c = (x1[31:] + x2[31:]) % 2
     return c[:length]
 

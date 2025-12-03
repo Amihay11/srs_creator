@@ -44,10 +44,12 @@ function c = generate_prs(c_init, len)
         x2(n) = bitand(bitshift(c_init, -(n - 1)), 1);
     end
 
-    % Generate remaining chips moving forward to avoid negative indices
-    for n = 1:len
-        x1(n + 31) = mod(x1(n + 3) + x1(n), 2);
-        x2(n + 31) = mod(x2(n + 3) + x2(n + 2) + x2(n + 1) + x2(n), 2);
+    % Generate remaining chips (1-indexed form of x1(n+31)=x1(n+3)+x1(n))
+    % Index the recurrence directly with positive offsets so MATLAB never
+    % touches negative/zero indices even for small ``len``.
+    for idx = 32:(len + 31)
+        x1(idx) = mod(x1(idx - 3) + x1(idx - 31), 2);
+        x2(idx) = mod(x2(idx - 3) + x2(idx - 2) + x2(idx - 1) + x2(idx - 31), 2);
     end
 
     % Gold sequence
