@@ -1,7 +1,44 @@
+%% generate_srs.m — synthesize time-domain LTE SRS (TS 36.211 5.5.3)
+%{
+Produce one OFDM symbol containing the sounding reference signal for a
+specified subframe following 3GPP TS 36.211 §5.5.3. The function ties
+together hopping selection, Zadoff–Chu generation, cyclic shift, comb
+placement, and IFFT synthesis, returning both the complex symbol and
+metadata describing the intermediate parameters.
+
+Inputs
+-----
+* ``config`` — SRS configuration struct created by ``create_config``.
+* ``subframe_index`` — zero-based subframe number within a radio frame.
+* ``n_fft`` (optional) — FFT size used for OFDM synthesis; defaults to 2048
+  for a 20 MHz LTE system.
+
+Outputs
+------
+* ``time_signal`` — column vector of length ``n_fft`` containing the SRS
+  OFDM symbol in the time domain.
+* ``info`` — struct with fields ``subframe_index``, ``slot_index``,
+  ``root_index``, ``alpha``, ``m_sc``, ``comb``, ``n_fft``, ``k0``, and
+  ``hopping`` capturing the configuration and mapping decisions.
+
+Computation details
+-------------------
+1. Subframe gating uses ``is_active_subframe`` to enforce the periodicity
+   :math:`T_{SRS}` from Table 5.5.3.3-1; inactive subframes raise an error.
+2. Slot indexing doubles the subframe number, then ``group_and_sequence_hopping``
+   derives the root sequence index :math:`u` (and group/sequence hop values)
+   per §5.5.3.1.3/1.4.
+3. ``zc_length`` selects :math:`N_{ZC}` (839 or 140 depending on bandwidth),
+   and ``generate_zadoff_chu`` produces the base sequence :math:`r_u(n)`.
+4. The bandwidth :math:`M_{sc}` from ``bandwidth_in_subcarriers`` trims the
+   base sequence; ``apply_cyclic_shift`` rotates by :math:`\alpha` to create
+   orthogonal variants (Table 5.5.3.2-1).
+5. ``map_to_frequency_grid`` interleaves the tones with comb spacing
+   :math:`K_{TC}` and offset :math:`k_0` into an ``n_fft`` grid. Finally,
+   ``ifft`` converts the sparse frequency grid into the time-domain symbol.
+%}
+
 function [time_signal, info] = generate_srs(config, subframe_index, n_fft)
-%GENERATE_SRS Generate the time-domain LTE SRS for a given subframe.
-%   [SIGNAL, INFO] = GENERATE_SRS(CONFIG, SUBFRAME_INDEX, N_FFT) returns one
-%   OFDM symbol worth of SRS along with metadata describing the mapping.
     if nargin < 3
         n_fft = 2048;
     end

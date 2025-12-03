@@ -1,27 +1,42 @@
+%% create_config.m — build LTE SRS configuration (TS 36.211 5.5.3)
+%{
+Construct and validate a configuration struct used throughout the SRS
+generation pipeline. Parameters map directly onto the notation in 3GPP
+TS 36.211 §5.5.3 (Sounding reference signal) so that each helper function
+operates on standard-aligned fields.
+
+Inputs
+-----
+* Name/value pairs defining the following required fields:
+  * ``cell_id`` — physical cell identity :math:`N_{ID}^{cell}` in [0, 503].
+  * ``bandwidth_config`` — :math:`B_{SRS}` (Table 5.5.3.2-1) ≥ 0.
+  * ``subframe_config`` — :math:`T_{SRS}` periodicity index ≥ 0 (Table
+    5.5.3.3-1; 0 disables transmission).
+  * ``b_hop`` — frequency-hopping parameter :math:`b_{hop}` ≥ 0.
+  * ``group_hopping_enabled`` — logical flag enabling group hopping (5.5.3.1.3).
+  * ``sequence_hopping_enabled`` — logical flag enabling sequence hopping (5.5.3.1.4).
+  * ``transmission_comb`` — :math:`k_{TC}` ∈ {0,1} selecting comb offset.
+  * ``cyclic_shift`` — :math:`\alpha` cyclic shift in radians (Table 5.5.3.2-1).
+  * ``srs_bandwidth`` — :math:`N_b` bandwidth index ∈ [0,3].
+  * ``n_ul_rb`` — uplink bandwidth :math:`N_{UL}^{RB}` > 0 in resource blocks.
+
+* Optional field:
+  * ``n_zc`` — custom Zadoff–Chu root length (defaults to 839 if omitted).
+
+Outputs
+------
+* ``config`` — struct containing all provided fields plus defaults; later
+  helper functions assume these fields exist and meet the standard bounds.
+
+Computation details
+-------------------
+The function reshapes name/value arguments into pairs, populates a struct,
+checks for required parameters, applies defaults, and then calls the
+internal validator. Validation enforces parameter ranges from TS 36.211
+tables to prevent out-of-range SRS generation requests.
+%}
+
 function config = create_config(varargin)
-%CREATE_CONFIG Build and validate an LTE SRS configuration structure.
-%   CONFIG = CREATE_CONFIG('Name', Value, ...) returns a struct with the
-%   parameters required by the LTE SRS generation routines. The fields map
-%   closely to the Python SRSConfig dataclass for easy cross-language use.
-%
-%   Required name-value pairs:
-%     'cell_id'                   Physical cell identity (0..503)
-%     'bandwidth_config'          B_srs index (>=0)
-%     'subframe_config'           T_srs periodicity (>=0; 0 disables SRS)
-%     'b_hop'                     Frequency hopping parameter (>=0)
-%     'group_hopping_enabled'     Logical flag
-%     'sequence_hopping_enabled'  Logical flag
-%     'transmission_comb'         k_tc (0 or 1)
-%     'cyclic_shift'              Alpha in radians
-%     'srs_bandwidth'             N_b (>=0)
-%     'n_ul_rb'                   Number of UL RBs (>0)
-%
-%   Optional:
-%     'n_zc'                      Custom Zadoff-Chu length; defaults to 839
-%
-%   The function performs lightweight validation and mirrors the helper
-%   methods available in the Python implementation via additional helper
-%   functions in the +lte_srs package.
 
 if mod(numel(varargin), 2) ~= 0
     error('Arguments must be provided as name/value pairs.');
